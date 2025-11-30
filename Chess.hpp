@@ -7,6 +7,7 @@ using namespace std;
 
 
 
+
 //CLASSES
 class Piece
 {
@@ -14,13 +15,17 @@ class Piece
     string name;         // "Pawn", "Rook", etc.
     Texture2D texture;   // Image of the piece
     Vector2 position;    // Actual position on screen
+    Vector2 prevPosition;
     bool isDragging;     // For movement with mouse
     bool isWhite;     // white or black
+    bool isSelected = false;  //for highlighting piece
+    bool isAlive = true;     //is alive or not
+    bool WhiteTurn = true;
     
     
     public:
     // Constructor
-    Piece(string n, Texture2D tex, Vector2 pos , bool isWhite);
+    Piece(string n, Texture2D tex, Vector2 pos , bool isWh);
     
     // Draw the piece
     void Draw(float boxSize);
@@ -34,6 +39,7 @@ class Piece
     // Getters
     Vector2 GetPosition() const { return position; }
     string GetName() const { return name; }
+    bool GetAlive() const { return isAlive; }
 };
 
 
@@ -54,11 +60,24 @@ Piece::Piece(string n, Texture2D tex, Vector2 pos, bool isWh)
 
 void Piece::Draw(float boxSize)
 {
-    float scale = 1.0f;
+    float scale = 1.3f;
     float offsetX = (boxSize - texture.width * scale) / 2;
     float offsetY = (boxSize - texture.height * scale) / 2;
     
-    DrawTextureEx(texture, {position.x + offsetX, position.y + offsetY}, 0.0f, scale, WHITE);
+    
+    if (isAlive)
+    {
+        DrawTextureEx(texture, {position.x + offsetX, position.y + offsetY}, 0.0f, scale, WHITE);
+    }
+    
+    if (isSelected)
+    {
+        DrawRectangleLinesEx(
+            { prevPosition.x, prevPosition.y, boxSize, boxSize },
+            5,      // thickness of the border (increase for more bold)
+            GOLD    // color of the border
+            );
+    }
 }
 
 void Piece::Update(float boxSize = 100)
@@ -72,11 +91,27 @@ void Piece::Update(float boxSize = 100)
         boxSize
     };
 
-    // If mouse clicks the piece
-    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(mouse, pieceRect))
+    // Detect if user clicked this piece
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
     {
-        isDragging = true;
+        Vector2 mouse = GetMousePosition();
+
+        // Check if mouse clicked inside the piece rectangle
+        Rectangle rect = { position.x, position.y, (float)texture.width, (float)texture.height };
+
+        if (CheckCollisionPointRec(mouse, rect))
+        {
+            isSelected = true;      // highlight ON
+            isDragging = true;      // start dragging
+            prevPosition = position;
+        }
+        else
+        {
+            isSelected = false;     // clicked somewhere else → remove highlight
+            isDragging = false;
+        }
     }
+
 
     // Move piece with mouse
     if (isDragging && IsMouseButtonDown(MOUSE_LEFT_BUTTON))
@@ -88,12 +123,46 @@ void Piece::Update(float boxSize = 100)
     // Drop it when mouse is released
     if (isDragging && IsMouseButtonReleased(MOUSE_LEFT_BUTTON))
     {
-        cout<<"peice position before "<<position.x<<" and "<<position.y<<endl;
-        position.x = roundf(position.x / boxSize) * boxSize;
-        position.y = roundf(position.y / boxSize) * boxSize;
-        isDragging = false;
-        cout<<"peice position after "<<position.x<<" and "<<position.y<<endl;
+        float snappedX = roundf(position.x / boxSize) * boxSize;
+        float snappedY = roundf(position.y / boxSize) * boxSize;
+
+        bool blocked = false;
+
+        for (auto &p : pieces)
+        {
+            // 🚨 IMPORTANT: skip checking yourself
+            if (&p == this) continue;
+
+            // If someone is on that square
+            if (p.position.x == snappedX && p.position.y == snappedY)
+            {
+                if (p.isWhite == isWhite)
+                {
+                    // Same color → ❌ blocked
+                    blocked = true;
+                }
+                else
+                {
+                    // Opposite color → ✔ capture
+                    p.isAlive = false;
+                }
+            }
+        }
+
+    if (blocked)
+    {
+        // Return to previous square
+        position = prevPosition;
     }
+    else
+    {
+        // Valid move → snap into place
+        position.x = snappedX;
+        position.y = snappedY;
+    }
+
+    isDragging = false;
+}
 }
 
 void Piece::Unload()

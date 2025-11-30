@@ -18,6 +18,7 @@ Texture2D whiteKing, blackKing;
 
 
 
+
 // VARIABLES
 extern const int boardsize = 800;
 extern const float boxsize = static_cast<float>(boardsize) / 8.0f;
@@ -52,20 +53,22 @@ void Drawboard(int size)
 
 void loadpeices()
 {
-     whitePawn =  LoadTexture("assets/White_Pawn.png");
-     whiteRook =  LoadTexture("assets/White_Rook.png");
-     whiteKnight =  LoadTexture("assets/White_Knight.png");
-     whiteBishop =  LoadTexture("assets/White_Bishop.png");
-     whiteKing =  LoadTexture("assets/White_King.png");
-     whiteQueen =  LoadTexture("assets/White_Queen.png");
+    whitePawn =  LoadTexture("assets/White_Pawn.png");
+    whiteRook =  LoadTexture("assets/White_Rook.png");
+    whiteKnight =  LoadTexture("assets/White_Knight.png");
+    whiteBishop =  LoadTexture("assets/White_Bishop.png");
+    whiteKing =  LoadTexture("assets/White_King.png");
+    whiteQueen =  LoadTexture("assets/White_Queen.png");
 
-     blackPawn =  LoadTexture("assets/Black_Pawn.png");
-     blackRook =  LoadTexture("assets/Black_Rook.png");
-     blackKnight =  LoadTexture("assets/Black_Knight.png");
-     blackBishop =  LoadTexture("assets/Black_Bishop.png");
-     blackKing =  LoadTexture("assets/Black_King.png");
-     blackQueen =  LoadTexture("assets/Black_Queen.png");
+    blackPawn =  LoadTexture("assets/Black_Pawn.png");
+    blackRook =  LoadTexture("assets/Black_Rook.png");
+    blackKnight =  LoadTexture("assets/Black_Knight.png");
+    blackBishop =  LoadTexture("assets/Black_Bishop.png");
+    blackKing =  LoadTexture("assets/Black_King.png");
+    blackQueen =  LoadTexture("assets/Black_Queen.png");
     std :: cout << "✅ All chess pieces loaded!\n";
+
+   
 }
 
 
@@ -124,11 +127,18 @@ void setup()
 
 void drawPiecesAndMove()
 {
-    // Draw all piece textures
-    for (auto &p : pieces)
-{
-    p.Draw(boxsize);
-    p.Update(boxsize);
+    for (auto it = pieces.begin(); it != pieces.end(); )
+    {
+        if (it->GetAlive())
+        {
+            it->Draw(boxsize);
+            it->Update(boxsize);
+            ++it; // move to next
+        }
+        else
+        {
+            it = pieces.erase(it); // erase returns next iterator
+        }
+    }
 }
 
-}
